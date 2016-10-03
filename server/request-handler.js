@@ -12,6 +12,8 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
+var storage = {};
+
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -52,7 +54,34 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end('Hello, World!');
+
+  console.log('POOOP', storage['poop']);
+
+  var body = '';
+
+  if (request.method === 'POST' && request.url === '/classes/messages') {
+    request.on('data', function(chunk) {
+      body += chunk.toString('utf8');
+      console.log('#####', body);
+    });
+
+    request.on('end', function() {
+      console.log('$$$$$$$');
+      response.writeHead(201);
+      storage['poop'] = JSON.stringify(body);
+    });
+
+    response.writeHead(201);
+    response.end(JSON.stringify({name: 'Tim', results: [1, 2, 3]}));
+  } else if (request.method === 'GET' && request.url === '/classes/messages') {
+    if (storage['poop']) {
+      response.end(storage['poop']);
+    } else {
+      response.end(JSON.stringify({name: 'Tim', results: [1, 2, 3]}));
+    }
+  }
+
+  response.end(JSON.stringify({name: 'Tim', results: [1, 2, 3]}));
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
@@ -70,4 +99,6 @@ var defaultCorsHeaders = {
   'access-control-allow-headers': 'content-type, accept',
   'access-control-max-age': 10 // Seconds.
 };
+
+module.exports = requestHandler;
 
