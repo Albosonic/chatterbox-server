@@ -12,7 +12,9 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 var fs = require('fs');
-var storage = undefined;
+var url = require('url');
+var dataGetter = require('./basic-server'); 
+var storage = {name: 'Tim', results: [1, 2, 3]};
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -41,11 +43,11 @@ var requestHandler = function(request, response) {
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'text/plain';
+  headers['Content-Type'] = request.headers['accept'];
 
+  response.writeHead(statusCode, headers);
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -54,6 +56,30 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
+
+  var root = '../client';
+  var parsed = url.parse(request.url);
+  var pathName = parsed.pathname;
+  var q = parsed.query;
+
+  if (pathName === undefined || pathName === '/') {
+    pathName = '/index.html';
+    console.log('*****', request.headers['accept']);
+    
+  }
+
+  if (pathName !== '/classes/messages') {
+    if (pathName === '/styles/styles.css') {
+      headers['Content-Type'] = 'text/css';
+      response.writeHead(statusCode, headers);
+    }
+    var file = fs.readFileSync(root + pathName);
+    file = file.toString();
+    response.end(file);
+  }
+  
+  // parse the requested file - ex /css/style.css
+
 
 
   if (request.url !== '/classes/messages') {
@@ -66,10 +92,14 @@ var requestHandler = function(request, response) {
     var body = '';
     request.on('data', function(chunk) {
       body += chunk.toString('utf8');
+
+
     });
 
     request.on('end', function() {
       storage = JSON.parse(body);
+      console.log(dataGetter.dataGetter(storage));
+      // dataGetter.insertData(storage);
     });
 
     response.writeHead(201);
@@ -78,16 +108,25 @@ var requestHandler = function(request, response) {
 
   if (request.method === 'GET') {
     response.writeHead(statusCode);
+    
 
-    if (storage) {
-      response.end(JSON.stringify({name: 'Tim', results: [storage]}));
-    } else {
-      response.end(JSON.stringify({name: 'Tim', results: [1, 2, 3]}));
-    } 
+    dataGetter.dataSetter(function(result) {
+      // console.log('$$$$$$$$$$$$$$$$$$', result);
+      response.end(JSON.stringify({results: result}));
+    });
+
+    // response.end(dataGetter.dataSetter(function));s
+    // response.end(JSON.stringify(dataGetter.dataSetter()));
+
   }
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
+    // if (storage) {
+    //   response.end(JSON.stringify({name: 'Tim', results: [storage]}));
+    // } else {
+    //   response.end(JSON.stringify({name: 'Tim', results: [1, 2, 3]}));
+    // } 
 // This code allows this server to talk to websites that
 // are on different domains, for instance, your chat client.
 //

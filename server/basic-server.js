@@ -1,12 +1,75 @@
 /* Import node's http module: */
 var http = require('http');
 var handler = require('./request-handler');
+var mongodb = require('mongodb')
 
 // Every server needs to listen on a port with a unique number. The
 // standard port for HTTP servers is port 80, but that port is
 // normally already claimed by another server and/or not accessible
 // so we'll use a standard testing port like 3000, other common development
 // ports are 8080 and 1337.
+var url = 'mongodb://localhost:27017/bats';
+var MongoClient = mongodb.MongoClient;
+
+var insertData = function (dataIn) {
+  MongoClient.connect(url, function (err, db) {
+    if (err) {
+      console.log('Unable to connect to the mongoDB server. Error:', err);
+    } else {
+      //HURRAY!! We are connected. :)
+      console.log('Connection established to', url);
+
+      // Get the documents collection
+      var collection = db.collection('users');
+
+      // Insert some users
+      collection.insert([dataIn], function (err, result) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log('Inserted %d documents into the "users" collection. The documents inserted with "_id" are:', result.length, result);
+        }
+        //Close connection
+        db.close();
+      });
+    }
+  });
+};
+
+var queryData = function (cb) {
+
+  MongoClient.connect(url, function (err, db) {
+    if (err) {
+      console.log('Unable to connect to the mongoDB server. Error:', err);
+    } else {
+      //HURRAY!! We are connected. :)
+      console.log('Connection established to', url);
+
+      // Get the documents collection
+      var collection = db.collection('users');
+
+      // Insert some users
+          // Insert some users
+     collection.find( { } ).toArray(function (err, result) {
+      if (err) {
+        console.log(err);
+      } else if (result.length) {
+        
+         cb(result);
+      } else {
+        console.log('No document(s) found with defined "find" criteria!');
+      }
+      //Close connection
+      db.close();
+    });
+    }
+  });
+
+};
+
+module.exports.dataGetter = insertData;
+module.exports.dataSetter = queryData;
+
 var port = 3000;
 
 // For now, since you're running this server on your local machine,
